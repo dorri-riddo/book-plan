@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: bookplan
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER_NAME}
+    password: ${DB_USER_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  h2:
+    console:
+      enabled: false
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+jwt:
+  secret: ${JWT_TOKEN}
+  access-token-validity: ${JWT_ACCESS_VALIDITY:15m}
+  refresh-token-validity: ${JWT_REFRESH_VALIDITY:1h}
+
+server:
+  port: ${PORT:8080}

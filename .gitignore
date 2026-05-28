@@ -40,7 +40,3 @@ out/
 /data/
 *.mv.db
 *.trace.db
-
-## application ##
-application.yaml
-application-production.yaml
