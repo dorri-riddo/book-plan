@@ -62,6 +62,20 @@ public class ReadingGoalController {
         return ResponseEntity.ok(list);
     }
 
+    @Operation(summary = "책별 독서 목표 조회", description = "특정 책에 대한 독서 목표 목록을 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/book/{bookId}")
+    public ResponseEntity<List<ReadingGoalCalculatePagesPerDayResponse>> findAllByBookId(
+            @Parameter(description = "책 ID") @PathVariable Long bookId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        List<ReadingGoalCalculatePagesPerDayResponse> list = service.findAllByBookId(userId, bookId);
+        return ResponseEntity.ok(list);
+    }
+
     @Operation(summary = "독서 목표 등록", description = "새로운 독서 목표를 등록합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "등록 성공"),

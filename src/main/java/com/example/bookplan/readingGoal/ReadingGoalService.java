@@ -98,6 +98,19 @@ public class ReadingGoalService {
         return deletedReadingGoalCount;
     }
 
+    public List<ReadingGoalCalculatePagesPerDayResponse> findAllByBookId(Long userId, Long bookId) {
+        Instant now = Instant.now(clock);
+
+        List<ReadingGoal> readingGoals = repository.findAllByUserIdAndBookId(userId, bookId);
+        List<Long> bookIds = readingGoals.stream().map(ReadingGoal::getBookId).toList();
+        Map<Long, Book> bookMap = bookRepository.findAllById(bookIds).stream()
+                .collect(toMap(Book::getId, identity()));
+
+        return readingGoals.stream()
+                .map(goal -> ReadingGoalCalculatePagesPerDayResponse.of(goal, bookMap.get(goal.getBookId()), now))
+                .toList();
+    }
+
     public List<ReadingGoalCalculatePagesPerDayResponse> calculatePagesPerDay(Long userId) {
         Instant now = Instant.now(clock);
 
