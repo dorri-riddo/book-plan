@@ -170,6 +170,8 @@ public class ReadingGoalServiceTest {
         ReadingGoal readingGoal = service.updateCurrentPage(request, readingGoalId, userId);
 
         assertThat(readingGoal.getCurrentPage()).isEqualTo(200);
+        assertThat(readingGoal.getTodayReadPages()).isEqualTo(200);
+        assertThat(readingGoal.getCurrentPageUpdatedAt()).isNotNull();
     }
 
     @Test
@@ -369,5 +371,64 @@ public class ReadingGoalServiceTest {
         assertThat(list)
                 .extracting(ReadingGoalCalculatePagesPerDayResponse::getTodayTargetPage)
                 .containsExactly(40, 30);
+        assertThat(list)
+                .extracting(ReadingGoalCalculatePagesPerDayResponse::getTodayReadPages)
+                .containsExactly(0, 0);
+        assertThat(list)
+                .extracting(ReadingGoalCalculatePagesPerDayResponse::getTodayRemainingPages)
+                .containsExactly(40, 30);
+    }
+
+    @Test
+    @DisplayName("오늘 목표만큼 읽으면 남은 페이지가 0이 된다")
+    void calculatePagesPerDayAfterReadingTodayTarget() {
+        Long userId = 1L;
+
+        Book book1 = Book.from(userId, "첫 번째 책", 200, "저자1", null, null, null, null);
+        ReflectionTestUtils.setField(book1, "id", 1L);
+        when(bookRepository.findAllById(List.of(1L)))
+                .thenReturn(List.of(book1));
+
+        ReadingGoal readingGoal1 = ReadingGoal
+                .from(userId, 1L, Instant.parse("2026-05-10T00:00:00.000Z"), 200);
+
+        Instant now = Instant.now(fixedClock);
+        readingGoal1.updateCurrentPage(40, now);
+
+        when(readingGoalRepository.findAllByUserIdAndStatus(userId, ReadingGoalStatus.IN_PROGRESS))
+                .thenReturn(List.of(readingGoal1));
+
+        List<ReadingGoalCalculatePagesPerDayResponse> list = service.calculatePagesPerDay(userId);
+
+        assertThat(list).hasSize(1);
+        assertThat(list.get(0).getTodayTargetPage()).isEqualTo(40);
+        assertThat(list.get(0).getTodayReadPages()).isEqualTo(40);
+        assertThat(list.get(0).getTodayRemainingPages()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("오늘 목표보다 더 읽어도 남은 페이지가 음수가 되지 않는다")
+    void calculatePagesPerDayAfterReadingMoreThanTarget() {
+        Long userId = 1L;
+
+        Book book1 = Book.from(userId, "첫 번째 책", 200, "저자1", null, null, null, null);
+        ReflectionTestUtils.setField(book1, "id", 1L);
+        when(bookRepository.findAllById(List.of(1L)))
+                .thenReturn(List.of(book1));
+
+        ReadingGoal readingGoal1 = ReadingGoal
+                .from(userId, 1L, Instant.parse("2026-05-10T00:00:00.000Z"), 200);
+
+        Instant now = Instant.now(fixedClock);
+        readingGoal1.updateCurrentPage(60, now);
+
+        when(readingGoalRepository.findAllByUserIdAndStatus(userId, ReadingGoalStatus.IN_PROGRESS))
+                .thenReturn(List.of(readingGoal1));
+
+        List<ReadingGoalCalculatePagesPerDayResponse> list = service.calculatePagesPerDay(userId);
+
+        assertThat(list.get(0).getTodayTargetPage()).isEqualTo(40);
+        assertThat(list.get(0).getTodayReadPages()).isEqualTo(60);
+        assertThat(list.get(0).getTodayRemainingPages()).isEqualTo(0);
     }
 }

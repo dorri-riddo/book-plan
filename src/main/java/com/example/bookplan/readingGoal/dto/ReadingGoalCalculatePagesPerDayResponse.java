@@ -31,6 +31,12 @@ public class ReadingGoalCalculatePagesPerDayResponse {
     @Schema(description = "오늘 읽어야 할 페이지 수", example = "23")
     private Integer todayTargetPage;
 
+    @Schema(description = "오늘 읽은 페이지 수", example = "10")
+    private Integer todayReadPages;
+
+    @Schema(description = "오늘 남은 페이지 수", example = "13")
+    private Integer todayRemainingPages;
+
     @Schema(description = "진행률 (%)", example = "32")
     private Integer percent;
 
@@ -40,26 +46,35 @@ public class ReadingGoalCalculatePagesPerDayResponse {
     protected ReadingGoalCalculatePagesPerDayResponse() {}
 
     private ReadingGoalCalculatePagesPerDayResponse(Long id, String title, Integer currentPage, Integer targetPage,
-                                                    Integer remainingDay, Integer todayTargetPage, Integer percent, Instant targetDate) {
+                                                    Integer remainingDay, Integer todayTargetPage,
+                                                    Integer todayReadPages, Integer todayRemainingPages,
+                                                    Integer percent, Instant targetDate) {
         this.id = id;
         this.title = title;
         this.currentPage = currentPage;
         this.targetPage = targetPage;
         this.remainingDay = remainingDay;
         this.todayTargetPage = todayTargetPage;
+        this.todayReadPages = todayReadPages;
+        this.todayRemainingPages = todayRemainingPages;
         this.percent = percent;
         this.targetDate = targetDate;
     }
 
     public static ReadingGoalCalculatePagesPerDayResponse of(ReadingGoal readingGoal, Book book, Instant now) {
         int remainingDay = readingGoal.calculateRemainingDay(now);
+        int todayTargetPage = readingGoal.calculateTodayTargetPage(remainingDay, now);
+        int todayReadPages = readingGoal.getTodayReadPages(now);
+        int todayRemainingPages = Math.max(0, todayTargetPage - todayReadPages);
         return new ReadingGoalCalculatePagesPerDayResponse(
                 readingGoal.getId(),
                 book.getTitle(),
                 readingGoal.getCurrentPage(),
                 readingGoal.getTargetPage(),
                 remainingDay,
-                readingGoal.calculateTodayTargetPage(remainingDay),
+                todayTargetPage,
+                todayReadPages,
+                todayRemainingPages,
                 readingGoal.calculatePercent(),
                 readingGoal.getTargetDate()
         );

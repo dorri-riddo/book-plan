@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 @Entity
@@ -37,6 +38,12 @@ public class ReadingGoal {
     @Column(nullable = false)
     private int currentPage;
 
+    @Column(nullable = false)
+    private int todayReadPages;
+
+    @Column(nullable = false)
+    private Instant currentPageUpdatedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ReadingGoalStatus status;
@@ -58,11 +65,22 @@ public class ReadingGoal {
         this.targetDate = targetDate;
         this.targetPage = targetPage;
         this.currentPage = currentPage;
+        this.todayReadPages = 0;
+        this.currentPageUpdatedAt = Instant.now();
         this.status = status;
     }
 
-    public void updateCurrentPage(int currentPage) {
-        this.currentPage = currentPage;
+    public void updateCurrentPage(int newCurrentPage, Instant now) {
+        int pageIncrement = newCurrentPage - this.currentPage;
+
+        if (isSameDay(this.currentPageUpdatedAt, now)) {
+            this.todayReadPages += pageIncrement;
+        } else {
+            this.todayReadPages = pageIncrement;
+        }
+
+        this.currentPageUpdatedAt = now;
+        this.currentPage = newCurrentPage;
     }
 
     public void updateTargetDate(Instant targetDate) {
@@ -80,13 +98,16 @@ public class ReadingGoal {
         return remainingDay;
     }
 
-    public int calculateTodayTargetPage(int remainingDay) {
-        int remainingPage = this.targetPage - this.currentPage;
+    public int calculateTodayTargetPage(int remainingDay, Instant now) {
+        int todayRead = getTodayReadPages(now);
+        int pageAtStartOfToday = this.currentPage - todayRead;
+        int remainingAtStart = this.targetPage - pageAtStartOfToday;
+
         if (remainingDay <= 0) {
-            return this.targetPage - this.currentPage;
+            return remainingAtStart;
         }
 
-        return (remainingPage + remainingDay - 1) / remainingDay;
+        return (remainingAtStart + remainingDay - 1) / remainingDay;
     }
 
     public int calculatePercent() {
@@ -94,6 +115,19 @@ public class ReadingGoal {
             return 0;
         }
         return (int) (this.currentPage * 100L / this.targetPage);
+    }
+
+    public int getTodayReadPages(Instant now) {
+        return isSameDay(this.currentPageUpdatedAt, now) ? this.todayReadPages : 0;
+    }
+
+    private boolean isSameDay(Instant day1, Instant day2) {
+        if (day1 == null || day2 == null) {
+            return false;
+        }
+        LocalDate dayA = day1.atZone(ZoneOffset.UTC).toLocalDate();
+        LocalDate dayB = day2.atZone(ZoneOffset.UTC).toLocalDate();
+        return dayA.equals(dayB);
     }
 
     public static ReadingGoal from(Long userId, Long bookId, Instant targetDate, int targetPage) {

@@ -66,7 +66,8 @@ public class ReadingGoalService {
             this.updateStatus(statusRequest, readingGoalId, userId);
         }
 
-        readingGoal.updateCurrentPage(request.getCurrentPage());
+        Instant now = Instant.now(clock);
+        readingGoal.updateCurrentPage(request.getCurrentPage(), now);
 
         return readingGoal;
     }
