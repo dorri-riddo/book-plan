@@ -47,7 +47,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public boolean validate(String token) {
+    public boolean validateAccessToken(String token) {
         try {
             Jwts.parser()
                     .verifyWith(key)
@@ -58,6 +58,28 @@ public class JwtTokenProvider {
             // TODO 로깅 추가 (만료/위조/형식 등 원인 구분 필요)
             return false;
         }
+    }
+
+    public boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return TYPE_REFRESH.equals(claims.get(CLAIM_TYPE, String.class));
+        } catch (JwtException e) {
+            return false;
+        }
+    }
+
+    public Long getUserIdFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        return Long.parseLong(claims.getSubject());
     }
 
     public Authentication getAuthentication(String token) {

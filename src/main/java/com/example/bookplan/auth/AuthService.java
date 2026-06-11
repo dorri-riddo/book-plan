@@ -2,6 +2,8 @@ package com.example.bookplan.auth;
 
 import com.example.bookplan.auth.dto.LogInRequest;
 import com.example.bookplan.auth.dto.LogInResponse;
+import com.example.bookplan.auth.dto.RefreshRequest;
+import com.example.bookplan.auth.exception.InvalidRefreshTokenException;
 import com.example.bookplan.auth.exception.NotFoundEmailException;
 import com.example.bookplan.auth.exception.WrongPasswordException;
 import com.example.bookplan.auth.jwt.JwtTokenProvider;
@@ -39,5 +41,23 @@ public class AuthService {
                 .build();
 
         return response;
+    }
+
+    public LogInResponse refresh(RefreshRequest request) {
+        String token = request.getRefreshToken();
+
+        if (!jwtTokenProvider.validateRefreshToken(token)) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        String accessToken = jwtTokenProvider.createAccessToken(userId);
+        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+
+        return LogInResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 }
