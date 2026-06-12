@@ -21,4 +21,11 @@ public class LogInRequest {
     @NotBlank
     @Size(min = 5)
     private String password;
+
+    @Schema(description = "자동 로그인 여부", example = "false")
+    private boolean autoLogin;
+
+    @Schema(description = "기기 고유 식별자", example = "550e8400-e29b-41d4-a716-446655440000")
+    @NotBlank
+    private String deviceId;
 }

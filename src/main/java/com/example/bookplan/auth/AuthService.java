@@ -14,15 +14,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AuthService {
+    private static final long AUTO_LOGIN_VALIDITY = Duration.ofDays(30).toMillis();
+    private static final Duration GRACE_PERIOD = Duration.ofSeconds(30);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenRepository tokenRepository;
 
     public LogInResponse logIn(LogInRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
@@ -33,31 +39,82 @@ public class AuthService {
             throw new WrongPasswordException();
         }
 
+        long refreshValidityMs = request.isAutoLogin()
+                ? AUTO_LOGIN_VALIDITY
+                : jwtTokenProvider.getRefreshValidity();
+
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-        LogInResponse response = LogInResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), refreshValidityMs);
+        Instant refreshTokenExpiredAt = Instant.now().plusMillis(refreshValidityMs);
 
-        return response;
-    }
+        Optional<Token> existingToken = tokenRepository.findByUserIdAndDeviceId(
+                user.getId(), request.getDeviceId());
 
-    public LogInResponse refresh(RefreshRequest request) {
-        String token = request.getRefreshToken();
-
-        if (!jwtTokenProvider.validateRefreshToken(token)) {
-            throw new InvalidRefreshTokenException();
+        if (existingToken.isPresent()) {
+            existingToken.get().updateTokens(accessToken, refreshToken,
+                    refreshTokenExpiredAt, request.isAutoLogin());
+        } else {
+            Token token = new Token(user.getId(), request.getDeviceId(),
+                    accessToken, refreshToken, refreshTokenExpiredAt, request.isAutoLogin());
+            tokenRepository.save(token);
         }
-
-        Long userId = jwtTokenProvider.getUserIdFromToken(token);
-
-        String accessToken = jwtTokenProvider.createAccessToken(userId);
-        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         return LogInResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    public LogInResponse refresh(RefreshRequest request) {
+        String rawToken = request.getRefreshToken();
+
+        if (!jwtTokenProvider.validateRefreshToken(rawToken)) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        // 1. 현재 리프레시 토큰으로 조회
+        Optional<Token> tokenOpt = tokenRepository.findByRefreshToken(rawToken);
+
+        if (tokenOpt.isPresent()) {
+            Token token = tokenOpt.get();
+
+            if (token.getRefreshTokenExpiredAt().isBefore(Instant.now())) {
+                throw new InvalidRefreshTokenException();
+            }
+
+            long refreshValidityMs = token.isAutoLogin()
+                    ? AUTO_LOGIN_VALIDITY
+                    : jwtTokenProvider.getRefreshValidity();
+
+            String newAccessToken = jwtTokenProvider.createAccessToken(token.getUserId());
+            String newRefreshToken = jwtTokenProvider.createRefreshToken(token.getUserId(), refreshValidityMs);
+            Instant newRefreshTokenExpiredAt = Instant.now().plusMillis(refreshValidityMs);
+            Instant gracePeriodExpiredAt = Instant.now().plus(GRACE_PERIOD);
+
+            token.rotateRefreshToken(newAccessToken, newRefreshToken,
+                    newRefreshTokenExpiredAt, gracePeriodExpiredAt);
+
+            return LogInResponse.builder()
+                    .accessToken(newAccessToken)
+                    .refreshToken(newRefreshToken)
+                    .build();
+        }
+
+        // 2. Grace period: 이전 리프레시 토큰으로 조회
+        Optional<Token> graceOpt = tokenRepository.findByPreviousRefreshToken(rawToken);
+
+        if (graceOpt.isPresent()) {
+            Token token = graceOpt.get();
+            if (token.getPreviousRefreshTokenExpiredAt() != null
+                    && token.getPreviousRefreshTokenExpiredAt().isAfter(Instant.now())) {
+                // 이미 갱신된 현재 토큰을 그대로 반환
+                return LogInResponse.builder()
+                        .accessToken(token.getAccessToken())
+                        .refreshToken(token.getRefreshToken())
+                        .build();
+            }
+        }
+
+        throw new InvalidRefreshTokenException();
     }
 }

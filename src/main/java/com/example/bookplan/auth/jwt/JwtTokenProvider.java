@@ -36,6 +36,14 @@ public class JwtTokenProvider {
         return buildToken(userId, TYPE_REFRESH, refreshValidity);
     }
 
+    public String createRefreshToken(Long userId, long validityMs) {
+        return buildToken(userId, TYPE_REFRESH, validityMs);
+    }
+
+    public long getRefreshValidity() {
+        return refreshValidity;
+    }
+
     private String buildToken(Long userId, String type, long validityMs) {
         Date now = new Date();
         return Jwts.builder()
