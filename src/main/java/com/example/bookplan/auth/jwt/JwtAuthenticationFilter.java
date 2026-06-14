@@ -1,5 +1,6 @@
 package com.example.bookplan.auth.jwt;
 
+import com.example.bookplan.auth.TokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,13 +16,18 @@ import java.io.IOException;
 @AllArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider tokenProvider;
+    private final TokenRepository tokenRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = resolveToken(request);
         if (token != null && tokenProvider.validateAccessToken(token)) {
-            Authentication auth = tokenProvider.getAuthentication(token);
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            Long userId = tokenProvider.getUserIdFromToken(token);
+            // 로그아웃으로 DB에서 사라진 액세스 토큰은 서명이 유효해도 인증하지 않는다.
+            if (tokenRepository.existsByUserIdAndAccessToken(userId, token)) {
+                Authentication auth = tokenProvider.getAuthentication(token);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
         }
 
         filterChain.doFilter(request, response);

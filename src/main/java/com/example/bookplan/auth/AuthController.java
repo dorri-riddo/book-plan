@@ -2,6 +2,7 @@ package com.example.bookplan.auth;
 
 import com.example.bookplan.auth.dto.LogInRequest;
 import com.example.bookplan.auth.dto.LogInResponse;
+import com.example.bookplan.auth.dto.LogOutRequest;
 import com.example.bookplan.auth.dto.RefreshRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,8 +24,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService service;
 
-    // 추후 개발
-    // 1. 로그아웃
+    @Operation(summary = "로그아웃", description = "현재 기기의 토큰을 삭제하여 로그아웃합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @PostMapping("logOut")
+    public ResponseEntity<Void> logOut(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody LogOutRequest request) {
+        service.logOut(userId, request);
+        return ResponseEntity.ok().build();
+    }
 
     @Operation(summary = "토큰 갱신", description = "리프레시 토큰으로 새 액세스 토큰과 리프레시 토큰을 발급합니다.")
     @ApiResponses({

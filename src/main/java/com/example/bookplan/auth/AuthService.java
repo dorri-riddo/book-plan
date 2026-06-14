@@ -2,6 +2,7 @@ package com.example.bookplan.auth;
 
 import com.example.bookplan.auth.dto.LogInRequest;
 import com.example.bookplan.auth.dto.LogInResponse;
+import com.example.bookplan.auth.dto.LogOutRequest;
 import com.example.bookplan.auth.dto.RefreshRequest;
 import com.example.bookplan.auth.exception.InvalidRefreshTokenException;
 import com.example.bookplan.auth.exception.NotFoundEmailException;
@@ -63,6 +64,10 @@ public class AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    public void logOut(Long userId, LogOutRequest request) {
+        tokenRepository.deleteByUserIdAndDeviceId(userId, request.getDeviceId());
     }
 
     public LogInResponse refresh(RefreshRequest request) {

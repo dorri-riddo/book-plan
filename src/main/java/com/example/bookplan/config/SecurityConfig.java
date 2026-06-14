@@ -1,5 +1,6 @@
 package com.example.bookplan.config;
 
+import com.example.bookplan.auth.TokenRepository;
 import com.example.bookplan.auth.jwt.JwtAuthenticationFilter;
 import com.example.bookplan.auth.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenRepository tokenRepository;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -62,7 +64,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtTokenProvider),
+                        new JwtAuthenticationFilter(jwtTokenProvider, tokenRepository),
                         UsernamePasswordAuthenticationFilter.class
                 );
 
