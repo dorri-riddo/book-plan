@@ -1,5 +1,6 @@
 package com.example.bookplan.user;
 
+import com.example.bookplan.auth.TokenRepository;
 import com.example.bookplan.user.dto.UserCreateRequest;
 import com.example.bookplan.user.exception.DuplicateEmailException;
 import com.example.bookplan.user.exception.DuplicateNickNameException;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class UserService {
     private final UserRepository repository;
+    private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
 
     public User create(UserCreateRequest request) {
@@ -22,6 +24,13 @@ public class UserService {
         User user = repository.save(User.from(request, encodedPassword));
 
         return user;
+    }
+
+    public void withdraw(Long userId) {
+        tokenRepository.deleteByUserId(userId);
+        if (repository.existsById(userId)) {
+            repository.deleteById(userId);
+        }
     }
 
     private void validateUniqueness(UserCreateRequest request) {

@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,5 +38,16 @@ public class UserController {
     public ResponseEntity<User> create(@Valid @RequestBody UserCreateRequest request) {
         User user = service.create(request);
         return ResponseEntity.ok(user);
+    }
+
+    @Operation(summary = "회원 탈퇴", description = "인증된 사용자를 탈퇴 처리합니다. (users 로우 하드 삭제)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "탈퇴 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @DeleteMapping
+    public ResponseEntity<Void> withdraw(@AuthenticationPrincipal Long userId) {
+        service.withdraw(userId);
+        return ResponseEntity.ok().build();
     }
 }

@@ -9,5 +9,6 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
     Optional<Token> findByRefreshToken(String refreshToken);
     Optional<Token> findByPreviousRefreshToken(String previousRefreshToken);
     void deleteByUserIdAndDeviceId(Long userId, String deviceId);
+    void deleteByUserId(Long userId);
     boolean existsByUserIdAndAccessToken(Long userId, String accessToken);
 }
