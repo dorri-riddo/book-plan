@@ -107,7 +107,7 @@ public class ReadingGoal {
             return remainingAtStart;
         }
 
-        return (remainingAtStart + remainingDay - 1) / remainingDay;
+        return (remainingAtStart + remainingDay) / (remainingDay + 1);
     }
 
     public int calculatePercent() {
