@@ -2,6 +2,7 @@ package com.example.bookplan.readingGoal.dto;
 
 import com.example.bookplan.book.Book;
 import com.example.bookplan.readingGoal.ReadingGoal;
+import com.example.bookplan.readingGoal.ReadingGoalStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -43,12 +44,15 @@ public class ReadingGoalCalculatePagesPerDayResponse {
     @Schema(description = "목표 완료 날짜", example = "2026-06-30T00:00:00Z")
     private Instant targetDate;
 
+    @Schema(description = "목표 상태 (IN_PROGRESS, COMPLETED, ABANDONED)", example = "IN_PROGRESS")
+    private ReadingGoalStatus status;
+
     protected ReadingGoalCalculatePagesPerDayResponse() {}
 
     private ReadingGoalCalculatePagesPerDayResponse(Long id, String title, Integer currentPage, Integer targetPage,
                                                     Integer remainingDay, Integer todayTargetPage,
                                                     Integer todayReadPages, Integer todayRemainingPages,
-                                                    Integer percent, Instant targetDate) {
+                                                    Integer percent, Instant targetDate, ReadingGoalStatus status) {
         this.id = id;
         this.title = title;
         this.currentPage = currentPage;
@@ -59,6 +63,7 @@ public class ReadingGoalCalculatePagesPerDayResponse {
         this.todayRemainingPages = todayRemainingPages;
         this.percent = percent;
         this.targetDate = targetDate;
+        this.status = status;
     }
 
     public static ReadingGoalCalculatePagesPerDayResponse of(ReadingGoal readingGoal, Book book, Instant now) {
@@ -76,7 +81,8 @@ public class ReadingGoalCalculatePagesPerDayResponse {
                 todayReadPages,
                 todayRemainingPages,
                 readingGoal.calculatePercent(),
-                readingGoal.getTargetDate()
+                readingGoal.getTargetDate(),
+                readingGoal.getStatus()
         );
     }
 }
