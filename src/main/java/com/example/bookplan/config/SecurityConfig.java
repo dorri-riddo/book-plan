@@ -44,22 +44,11 @@ public class SecurityConfig {
                         .frameOptions(frame -> frame.sameOrigin())
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/error", "/h2-console/**").permitAll()
-                        .requestMatchers(HttpMethod.POST,"/auth/logIn", "/auth/refresh", "/users", "/").permitAll()
+                        .requestMatchers("/error", "/h2-console/**", "/health").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/auth/logIn", "/auth/refresh", "/users").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
                 )
-//                .formLogin(form -> form
-//                        .loginPage("/loginForm")
-//                        .loginProcessingUrl("/login")
-//                        .defaultSuccessUrl("/")
-//                        .permitAll()
-//                )
-//                .logout(logout -> logout
-//                        .logoutUrl("/logout")
-//                        .logoutSuccessUrl("/")
-//                        .invalidateHttpSession(true)
-//                )
                 .sessionManagement(sessionManagement -> sessionManagement
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
