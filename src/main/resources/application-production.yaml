@@ -5,6 +5,11 @@ spring:
     url: ${DB_URL}
     username: ${DB_USER_NAME}
     password: ${DB_USER_PASSWORD}
+    hikari:
+      minimum-idle: 0
+      maximum-pool-size: 3
+      idle-timeout: 30000
+      keepalive-time: 0
   jpa:
     hibernate:
       ddl-auto: update

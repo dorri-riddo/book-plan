@@ -5,6 +5,11 @@ spring:
     url: jdbc:h2:file:./data/bookplan;AUTO_SERVER=TRUE;MODE=PostgreSQL
     username: sa
     password:
+    hikari:
+      minimum-idle: 0
+      maximum-pool-size: 3
+      idle-timeout: 30000
+      keepalive-time: 0
   jpa:
     hibernate:
       ddl-auto: update
