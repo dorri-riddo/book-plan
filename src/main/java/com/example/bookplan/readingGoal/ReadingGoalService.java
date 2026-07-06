@@ -81,6 +81,15 @@ public class ReadingGoalService {
         return readingGoal;
     }
 
+    public ReadingGoal updateTargetPage(ReadingGoalUpdateTargetPageRequest request, Long readingGoalId, Long userId) {
+        ReadingGoal readingGoal = repository.findByIdAndUserId(readingGoalId, userId)
+                .orElseThrow(() -> new NotFoundReadingGoalException(readingGoalId));
+
+        readingGoal.updateTargetPage(request.getTargetPage());
+
+        return readingGoal;
+    }
+
     public ReadingGoal updateStatus(ReadingGoalUpdateStatusRequest request, Long readingGoalId, Long userId) {
         ReadingGoal readingGoal = repository.findByIdAndUserId(readingGoalId, userId)
                 .orElseThrow(() -> new NotFoundReadingGoalException(readingGoalId));

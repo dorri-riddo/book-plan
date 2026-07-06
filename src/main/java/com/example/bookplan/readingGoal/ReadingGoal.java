@@ -87,6 +87,10 @@ public class ReadingGoal {
         this.targetDate = targetDate;
     }
 
+    public void updateTargetPage(int targetPage) {
+        this.targetPage = targetPage;
+    }
+
     public void updateStatus(ReadingGoalStatus status) {
         this.status = status;
     }

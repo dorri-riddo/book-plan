@@ -125,6 +125,23 @@ public class ReadingGoalController {
         return ResponseEntity.ok(readingGoal);
     }
 
+    @Operation(summary = "목표 분량 수정", description = "독서 목표의 목표 페이지(분량)를 수정합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "수정 성공"),
+        @ApiResponse(responseCode = "400", description = "유효성 검증 실패"),
+        @ApiResponse(responseCode = "401", description = "인증 실패"),
+        @ApiResponse(responseCode = "404", description = "독서 목표를 찾을 수 없음")
+    })
+    @PutMapping("/targetPage/{readingGoalId}")
+    public ResponseEntity<ReadingGoal> updateTargetPage(
+            @Parameter(description = "독서 목표 ID") @PathVariable Long readingGoalId,
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody ReadingGoalUpdateTargetPageRequest request
+    ) {
+        ReadingGoal readingGoal = service.updateTargetPage(request, readingGoalId, userId);
+        return ResponseEntity.ok(readingGoal);
+    }
+
     @Operation(summary = "상태 수정", description = "독서 목표의 상태를 수정합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "수정 성공"),
