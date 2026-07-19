@@ -1,6 +1,7 @@
 package com.example.bookplan.auth.service;
 
 import com.example.bookplan.auth.AuthService;
+import com.example.bookplan.auth.TokenRepository;
 import com.example.bookplan.auth.dto.LogInRequest;
 import com.example.bookplan.auth.dto.LogInResponse;
 import com.example.bookplan.auth.exception.NotFoundEmailException;
@@ -21,7 +22,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -35,6 +35,8 @@ public class AuthServiceTest {
     PasswordEncoder passwordEncoder;
     @Mock
     JwtTokenProvider jwtTokenProvider;
+    @Mock
+    TokenRepository tokenRepository;
     @InjectMocks
     AuthService service;
 
@@ -52,8 +54,11 @@ public class AuthServiceTest {
                 .willReturn(Optional.of(mockUser));
         given(passwordEncoder.matches("test1234", "encoded-password"))
                 .willReturn(true);
+        given(jwtTokenProvider.getRefreshValidity()).willReturn(1000L);
         given(jwtTokenProvider.createAccessToken(1L)).willReturn("access-token-value");
-        given(jwtTokenProvider.createRefreshToken(1L)).willReturn("refresh-token-value");
+        given(jwtTokenProvider.createRefreshToken(1L, 1000L)).willReturn("refresh-token-value");
+        given(tokenRepository.findByUserIdAndDeviceId(1L, request.getDeviceId()))
+                .willReturn(Optional.empty());
 
         LogInResponse response = service.logIn(request);
 

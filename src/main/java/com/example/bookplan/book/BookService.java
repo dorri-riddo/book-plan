@@ -16,7 +16,7 @@ public class BookService {
     private final BookRepository repository;
 
     public List<Book> findAll(Long userId) {
-        List<Book> books = repository.findAllByUserId(userId);
+        List<Book> books = repository.findAllByUserIdOrderByIdDesc(userId);
         return books;
     }
 

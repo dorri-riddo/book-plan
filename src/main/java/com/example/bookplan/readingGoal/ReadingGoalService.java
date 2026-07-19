@@ -27,7 +27,7 @@ public class ReadingGoalService {
     private final Clock clock;
 
     public List<ReadingGoal> findAll(Long userId) {
-        List<ReadingGoal> readingGoals = repository.findAllByUserId(userId);
+        List<ReadingGoal> readingGoals = repository.findAllByUserIdOrderByIdDesc(userId);
         return readingGoals;
     }
 
@@ -111,7 +111,7 @@ public class ReadingGoalService {
     public List<ReadingGoalCalculatePagesPerDayResponse> findAllByBookId(Long userId, Long bookId) {
         Instant now = Instant.now(clock);
 
-        List<ReadingGoal> readingGoals = repository.findAllByUserIdAndBookId(userId, bookId);
+        List<ReadingGoal> readingGoals = repository.findAllByUserIdAndBookIdOrderByIdDesc(userId, bookId);
         List<Long> bookIds = readingGoals.stream().map(ReadingGoal::getBookId).toList();
         Map<Long, Book> bookMap = bookRepository.findAllById(bookIds).stream()
                 .collect(toMap(Book::getId, identity()));
@@ -124,7 +124,7 @@ public class ReadingGoalService {
     public List<ReadingGoalCalculatePagesPerDayResponse> calculatePagesPerDay(Long userId) {
         Instant now = Instant.now(clock);
 
-        List<ReadingGoal> readingGoals = repository.findAllByUserIdAndStatus(userId, ReadingGoalStatus.IN_PROGRESS);
+        List<ReadingGoal> readingGoals = repository.findAllByUserIdAndStatusOrderByIdDesc(userId, ReadingGoalStatus.IN_PROGRESS);
         List<Long> bookIds = readingGoals.stream().map(ReadingGoal::getBookId).toList();
         Map<Long, Book> bookMap = bookRepository.findAllById(bookIds).stream()
                 .collect(toMap(Book::getId, identity()));

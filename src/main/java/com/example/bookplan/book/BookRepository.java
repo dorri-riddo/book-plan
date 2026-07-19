@@ -7,6 +7,6 @@ import java.util.Optional;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
     Optional<Book> findByIdAndUserId(Long bookId, Long userId);
-    List<Book> findAllByUserId(Long userId);
+    List<Book> findAllByUserIdOrderByIdDesc(Long userId);
     long deleteByIdAndUserId(Long bookId, Long userId);
 }

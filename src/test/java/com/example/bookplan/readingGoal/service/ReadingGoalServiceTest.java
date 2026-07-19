@@ -57,7 +57,7 @@ public class ReadingGoalServiceTest {
                 .from(userId, 1L, Instant.parse("2026-05-10T15:00:00.000Z"), 100);
         ReadingGoal readingGoal2 = ReadingGoal.from(userId, 2L, Instant.parse("2026-05-15T15:00:00.000Z"), 300);
 
-        when(readingGoalRepository.findAllByUserId(userId))
+        when(readingGoalRepository.findAllByUserIdOrderByIdDesc(userId))
                 .thenReturn(List.of(readingGoal1, readingGoal2));
 
         List<ReadingGoal> readingGoals = service.findAll(userId);
@@ -359,7 +359,7 @@ public class ReadingGoalServiceTest {
         ReadingGoal readingGoal1 = ReadingGoal
                 .from(userId, 1L, Instant.parse("2026-05-10T00:00:00.000Z"), 200);
         ReadingGoal readingGoal2 = ReadingGoal.from(userId, 2L, Instant.parse("2026-05-15T00:00:00.000Z"), 300);
-        when(readingGoalRepository.findAllByUserIdAndStatus(userId, ReadingGoalStatus.IN_PROGRESS))
+        when(readingGoalRepository.findAllByUserIdAndStatusOrderByIdDesc(userId, ReadingGoalStatus.IN_PROGRESS))
                 .thenReturn(List.of(readingGoal1, readingGoal2));
 
         List<ReadingGoalCalculatePagesPerDayResponse> list = service.calculatePagesPerDay(userId);
@@ -370,13 +370,13 @@ public class ReadingGoalServiceTest {
                 .containsExactly("첫 번째 책", "두 번째 책");
         assertThat(list)
                 .extracting(ReadingGoalCalculatePagesPerDayResponse::getTodayTargetPage)
-                .containsExactly(40, 30);
+                .containsExactly(34, 28);
         assertThat(list)
                 .extracting(ReadingGoalCalculatePagesPerDayResponse::getTodayReadPages)
                 .containsExactly(0, 0);
         assertThat(list)
                 .extracting(ReadingGoalCalculatePagesPerDayResponse::getTodayRemainingPages)
-                .containsExactly(40, 30);
+                .containsExactly(34, 28);
     }
 
     @Test
@@ -395,13 +395,13 @@ public class ReadingGoalServiceTest {
         Instant now = Instant.now(fixedClock);
         readingGoal1.updateCurrentPage(40, now);
 
-        when(readingGoalRepository.findAllByUserIdAndStatus(userId, ReadingGoalStatus.IN_PROGRESS))
+        when(readingGoalRepository.findAllByUserIdAndStatusOrderByIdDesc(userId, ReadingGoalStatus.IN_PROGRESS))
                 .thenReturn(List.of(readingGoal1));
 
         List<ReadingGoalCalculatePagesPerDayResponse> list = service.calculatePagesPerDay(userId);
 
         assertThat(list).hasSize(1);
-        assertThat(list.get(0).getTodayTargetPage()).isEqualTo(40);
+        assertThat(list.get(0).getTodayTargetPage()).isEqualTo(34);
         assertThat(list.get(0).getTodayReadPages()).isEqualTo(40);
         assertThat(list.get(0).getTodayRemainingPages()).isEqualTo(0);
     }
@@ -422,12 +422,12 @@ public class ReadingGoalServiceTest {
         Instant now = Instant.now(fixedClock);
         readingGoal1.updateCurrentPage(60, now);
 
-        when(readingGoalRepository.findAllByUserIdAndStatus(userId, ReadingGoalStatus.IN_PROGRESS))
+        when(readingGoalRepository.findAllByUserIdAndStatusOrderByIdDesc(userId, ReadingGoalStatus.IN_PROGRESS))
                 .thenReturn(List.of(readingGoal1));
 
         List<ReadingGoalCalculatePagesPerDayResponse> list = service.calculatePagesPerDay(userId);
 
-        assertThat(list.get(0).getTodayTargetPage()).isEqualTo(40);
+        assertThat(list.get(0).getTodayTargetPage()).isEqualTo(34);
         assertThat(list.get(0).getTodayReadPages()).isEqualTo(60);
         assertThat(list.get(0).getTodayRemainingPages()).isEqualTo(0);
     }

@@ -37,7 +37,7 @@ public class BookServiceTest {
         Book book1 = Book.from(userId, "첫 번째 책", 100, "저자1", null, null, null, null);
         Book book2 = Book.from(userId, "두 번째 책", 200, "저자2", null, null, null, null);
 
-        when(bookRepository.findAllByUserId(userId))
+        when(bookRepository.findAllByUserIdOrderByIdDesc(userId))
                 .thenReturn(List.of(book1, book2));
 
         List<Book> books = service.findAll(userId);
