@@ -3,6 +3,8 @@ package com.example.bookplan.book;
 import com.example.bookplan.book.dto.BookCreateRequest;
 import com.example.bookplan.book.dto.BookUpdateRequest;
 import com.example.bookplan.book.exception.NotFoundBookException;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,9 +17,12 @@ import java.util.List;
 public class BookService {
     private final BookRepository repository;
 
-    public List<Book> findAll(Long userId) {
-        List<Book> books = repository.findAllByUserIdOrderByIdDesc(userId);
-        return books;
+    public List<Book> findAll(Long userId, BookSearchType type, String keyword) {
+        Specification<Book> spec = BookSpecs.ownedBy(userId);
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(BookSpecs.keywordMatches(type, keyword));
+        }
+        return repository.findAll(spec, Sort.by(Sort.Direction.DESC, "id"));
     }
 
     public Book findOne(Long bookId, Long userId) {

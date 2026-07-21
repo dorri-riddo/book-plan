@@ -2,68 +2,87 @@ package com.example.bookplan.book.service;
 
 import com.example.bookplan.book.Book;
 import com.example.bookplan.book.BookRepository;
+import com.example.bookplan.book.BookSearchType;
 import com.example.bookplan.book.BookService;
 import com.example.bookplan.book.dto.BookCreateRequest;
 import com.example.bookplan.book.dto.BookUpdateRequest;
 import com.example.bookplan.book.exception.NotFoundBookException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
 import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@ExtendWith(MockitoExtension.class)
+@DataJpaTest
+@Import(BookService.class)
 public class BookServiceTest {
-    @Mock
-    BookRepository bookRepository;
-    @InjectMocks
+
+    @Autowired
     BookService service;
+    @Autowired
+    BookRepository repository;
+
+    private static final Long USER_ID = 1L;
+    private static final Long OTHER_USER_ID = 2L;
+    private static final Long NON_EXISTENT_BOOK_ID = 999L;
 
     @Test
-    @DisplayName("책 목록이 정상적으로 조회된다")
-    void findBooks() {
-        Long userId = 1L;
+    @DisplayName("제목 검색은 대소문자를 구분하지 않는다")
+    void searchTitleIgnoringCase() {
+        repository.save(Book.from(USER_ID, "Clean Code", 464, "로버트 C. 마틴", null, null, null, null));
 
-        Book book1 = Book.from(userId, "첫 번째 책", 100, "저자1", null, null, null, null);
-        Book book2 = Book.from(userId, "두 번째 책", 200, "저자2", null, null, null, null);
+        List<Book> books = service.findAll(USER_ID, BookSearchType.TITLE, "clean");
 
-        when(bookRepository.findAllByUserIdOrderByIdDesc(userId))
-                .thenReturn(List.of(book1, book2));
+        assertThat(books).extracting(Book::getTitle).containsExactly("Clean Code");
+    }
 
-        List<Book> books = service.findAll(userId);
+    @Test
+    @DisplayName("제목 일부만으로도 검색된다")
+    void searchTitleByPartialMatch() {
+        repository.save(Book.from(USER_ID, "여행의 이유", 208, "김영하", null, null, null, null));
+
+        List<Book> books = service.findAll(USER_ID, BookSearchType.TITLE, "이유");
+
+        assertThat(books).extracting(Book::getTitle).containsExactly("여행의 이유");
+    }
+
+    @Test
+    @DisplayName("작가 일부만으로도 검색된다")
+    void searchAuthorsByPartialMatch() {
+        repository.save(Book.from(USER_ID, "Clean Code", 464, "로버트 C. 마틴", null, null, null, null));
+
+        List<Book> books = service.findAll(USER_ID, BookSearchType.AUTHOR, "마틴");
+
+        assertThat(books).extracting(Book::getAuthors).containsExactly("로버트 C. 마틴");
+    }
+
+    @Test
+    @DisplayName("검색어가 없으면 해당 사용자의 전체 목록만 조회된다")
+    void findAllWithoutKeywordReturnsUsersBooks() {
+        repository.save(Book.from(USER_ID, "여행의 이유", 208, "김영하", null, null, null, null));
+        repository.save(Book.from(USER_ID, "Clean Code", 464, "로버트 C. 마틴", null, null, null, null));
+        repository.save(Book.from(OTHER_USER_ID, "다른 사람의 책", 100, "다른 저자", null, null, null, null));
+
+        List<Book> books = service.findAll(USER_ID, null, null);
 
         assertThat(books).hasSize(2);
-        assertThat(books)
-                .extracting(Book::getTitle)
-                .containsExactly("첫 번째 책", "두 번째 책");
-        assertThat(books).allMatch(book -> book.getUserId().equals(userId));
+        assertThat(books).allMatch(book -> book.getUserId().equals(USER_ID));
     }
 
     @Test
     @DisplayName("책 단일 조회가 정상적으로 된다")
     void findBook() {
-        Long bookId = 1L;
-        Long userId = 1L;
+        Book saved = repository.save(Book.from(USER_ID, "테스트 책", 100, "홍길동",
+                "테스트 번역가", "테스트 출판사", "9788956746425", "https://example.com/cover.jpg"));
 
-        Book existing = Book.from(userId, "테스트 책", 100, "홍길동",
-                "테스트 번역가", "테스트 출판사", "9788956746425", "https://example.com/cover.jpg");
+        Book book = service.findOne(saved.getId(), USER_ID);
 
-        when(bookRepository.findByIdAndUserId(bookId, userId))
-                .thenReturn(Optional.of(existing));
-
-        Book book = service.findOne(bookId, userId);
-
-        assertThat(book.getUserId()).isEqualTo(userId);
+        assertThat(book.getUserId()).isEqualTo(USER_ID);
         assertThat(book.getTitle()).isEqualTo("테스트 책");
         assertThat(book.getTotalPages()).isEqualTo(100);
         assertThat(book.getAuthors()).isEqualTo("홍길동");
@@ -76,21 +95,14 @@ public class BookServiceTest {
     @Test
     @DisplayName("책 단일 조회 하는데 책이 존재하지 않으면 404 에러가 발생한다")
     void findAndValidateBook() {
-        Long bookId = 1L;
-        Long userId = 1L;
-
-        when(bookRepository.findByIdAndUserId(bookId, userId))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.findOne(bookId, userId))
+        assertThatThrownBy(() -> service.findOne(NON_EXISTENT_BOOK_ID, USER_ID))
                 .isInstanceOf(NotFoundBookException.class)
-                .hasMessageContaining("존재하지 않는 책입니다: 1");
+                .hasMessageContaining("존재하지 않는 책입니다: " + NON_EXISTENT_BOOK_ID);
     }
 
     @Test
     @DisplayName("책 등록이 정상적으로 된다")
     void createBook() {
-        Long userId = 1L;
         BookCreateRequest request = BookCreateRequest.builder()
                 .title("테스트 책")
                 .totalPages(100)
@@ -99,12 +111,10 @@ public class BookServiceTest {
                 .publisher("테스트 출판사")
                 .build();
 
-        when(bookRepository.save(any(Book.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        Book book = service.create(request, USER_ID);
 
-        Book book = service.create(request, userId);
-
-        assertThat(book.getUserId()).isEqualTo(userId);
+        assertThat(book.getId()).isNotNull();
+        assertThat(book.getUserId()).isEqualTo(USER_ID);
         assertThat(book.getTitle()).isEqualTo("테스트 책");
         assertThat(book.getTotalPages()).isEqualTo(100);
         assertThat(book.getAuthors()).isEqualTo("홍길동 외 2명");
@@ -115,20 +125,15 @@ public class BookServiceTest {
     @Test
     @DisplayName("책 수정이 정상적으로 된다")
     void updateBook() {
-        Long bookId = 1L;
-        Long userId = 1L;
-
-        Book existing = Book.from(userId, "기존 제목", 100, "기존 저자",
-                "기존 번역가", "기존 출판사", "9788956746425", "https://example.com/old.jpg");
+        Book saved = repository.save(Book.from(USER_ID, "기존 제목", 100, "기존 저자",
+                "기존 번역가", "기존 출판사", "9788956746425", "https://example.com/old.jpg"));
 
         BookUpdateRequest request = BookUpdateRequest.builder()
                 .title("수정된 제목")
                 .totalPages(200)
                 .build();
 
-        when(bookRepository.findByIdAndUserId(bookId, userId)).thenReturn(Optional.of(existing));
-
-        Book book = service.update(request, bookId, userId);
+        Book book = service.update(request, saved.getId(), USER_ID);
 
         // 요청에 포함된 필드는 변경됨
         assertThat(book.getTitle()).isEqualTo("수정된 제목");
@@ -144,48 +149,32 @@ public class BookServiceTest {
     @Test
     @DisplayName("책을 수정하는데 책이 존재하지 않으면 404 에러가 발생한다")
     void validateBook() {
-        Long bookId = 1L;
-        Long userId = 1L;
-
         BookUpdateRequest request = BookUpdateRequest.builder()
                 .title("수정된 제목")
                 .totalPages(200)
                 .build();
 
-        when(bookRepository.findByIdAndUserId(bookId, userId))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.update(request, bookId, userId))
+        assertThatThrownBy(() -> service.update(request, NON_EXISTENT_BOOK_ID, USER_ID))
                 .isInstanceOf(NotFoundBookException.class)
-                .hasMessageContaining("존재하지 않는 책입니다: 1");
+                .hasMessageContaining("존재하지 않는 책입니다: " + NON_EXISTENT_BOOK_ID);
     }
 
     @Test
     @DisplayName("책이 정상적으로 삭제된다")
     void deleteBook() {
-        Long bookId = 1L;
-        Long userId = 1L;
+        Book saved = repository.save(Book.from(USER_ID, "삭제될 책", 100, "저자", null, null, null, null));
 
-        when(bookRepository.deleteByIdAndUserId(bookId, userId))
-                .thenReturn(1L);
+        long deletedBookCount = service.delete(saved.getId(), USER_ID);
 
-        Long deletedBookCount = service.delete(bookId, userId);
-
-        verify(bookRepository, times(1)).deleteByIdAndUserId(bookId, userId);
         assertThat(deletedBookCount).isEqualTo(1);
+        assertThat(repository.findByIdAndUserId(saved.getId(), USER_ID)).isEmpty();
     }
 
     @Test
     @DisplayName("책을 삭제하는데 책이 존재하지 않으면 404 에러가 발생한다")
     void deleteAndValidateBook() {
-        Long bookId = 1L;
-        Long userId = 1L;
-
-        when(bookRepository.deleteByIdAndUserId(bookId, userId))
-                .thenReturn(0L);
-
-        assertThatThrownBy(() -> service.delete(bookId, userId))
+        assertThatThrownBy(() -> service.delete(NON_EXISTENT_BOOK_ID, USER_ID))
                 .isInstanceOf(NotFoundBookException.class)
-                .hasMessageContaining("존재하지 않는 책입니다: 1");
+                .hasMessageContaining("존재하지 않는 책입니다: " + NON_EXISTENT_BOOK_ID);
     }
 }

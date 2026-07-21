@@ -24,18 +24,23 @@ public class BookController {
 
     // 1. Book 에 대해서 연재 소설이나 이북도 넣을 수 있도록 n 권 / n 화 처럼..
     // unit 컬럼 추가 예정 totalPage 대신 totalCount 로 바꾸고
-    // 2. list 조회 시 페이지네이션 및 검색 조건 추가 + 정렬 조건
+    // 2. list 조회 시 페이지네이션 + 정렬 조건
 
     @Operation(summary = "책 목록 조회", description = "사용자가 등록한 모든 책을 조회합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 searchType"),
         @ApiResponse(responseCode = "401", description = "인증 실패")
     })
     @GetMapping
     public ResponseEntity<List<Book>> findAll(
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "검색 필드. 기본값 TITLE")
+            @RequestParam(required = false) BookSearchType searchType,
+            @Parameter(description = "검색어 (부분 일치). 비어 있으면 전체 조회")
+            @RequestParam(required = false) String keyword
     ) {
-        List<Book> books = service.findAll(userId);
+        List<Book> books = service.findAll(userId, searchType, keyword);
         return ResponseEntity.ok(books);
     }
 
