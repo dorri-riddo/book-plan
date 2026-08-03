@@ -40,23 +40,26 @@ public class AuthService {
             throw new WrongPasswordException();
         }
 
-        long refreshValidityMs = request.isAutoLogin()
+        return issueTokens(user.getId(), request.getDeviceId(), request.isAutoLogin());
+    }
+
+    public LogInResponse issueTokens(Long userId, String deviceId, boolean autoLogin) {
+        long refreshValidityMs = autoLogin
                 ? AUTO_LOGIN_VALIDITY
                 : jwtTokenProvider.getRefreshValidity();
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId());
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), refreshValidityMs);
+        String accessToken = jwtTokenProvider.createAccessToken(userId);
+        String refreshToken = jwtTokenProvider.createRefreshToken(userId, refreshValidityMs);
         Instant refreshTokenExpiredAt = Instant.now().plusMillis(refreshValidityMs);
 
-        Optional<Token> existingToken = tokenRepository.findByUserIdAndDeviceId(
-                user.getId(), request.getDeviceId());
+        Optional<Token> existingToken = tokenRepository.findByUserIdAndDeviceId(userId, deviceId);
 
         if (existingToken.isPresent()) {
             existingToken.get().updateTokens(accessToken, refreshToken,
-                    refreshTokenExpiredAt, request.isAutoLogin());
+                    refreshTokenExpiredAt, autoLogin);
         } else {
-            Token token = new Token(user.getId(), request.getDeviceId(),
-                    accessToken, refreshToken, refreshTokenExpiredAt, request.isAutoLogin());
+            Token token = new Token(userId, deviceId,
+                    accessToken, refreshToken, refreshTokenExpiredAt, autoLogin);
             tokenRepository.save(token);
         }
 

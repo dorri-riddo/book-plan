@@ -1,6 +1,8 @@
 package com.example.bookplan.user;
 
+import com.example.bookplan.auth.AuthService;
 import com.example.bookplan.auth.TokenRepository;
+import com.example.bookplan.auth.dto.LogInResponse;
 import com.example.bookplan.user.dto.UserCreateRequest;
 import com.example.bookplan.user.exception.DuplicateEmailException;
 import com.example.bookplan.user.exception.DuplicateNickNameException;
@@ -16,14 +18,15 @@ public class UserService {
     private final UserRepository repository;
     private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
-    public User create(UserCreateRequest request) {
+    public LogInResponse create(UserCreateRequest request) {
         validateUniqueness(request);
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = repository.save(User.from(request, encodedPassword));
 
-        return user;
+        return authService.issueTokens(user.getId(), request.getDeviceId(), false);
     }
 
     public void withdraw(Long userId) {
