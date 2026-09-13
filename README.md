@@ -7,7 +7,7 @@
 
 > ✅ **Google Play 출시 (2026.08.30)** — 내부 테스트 → 비공개 테스트(테스터 12명 · 14일)를 거쳐 프로덕션 배포를 완료했고, 현재 운영 중입니다.
 >
-> 📱 [Google Play에서 설치하기](https://play.google.com/store/apps/details?id=YOUR_PACKAGE_ID)
+> 📱 [Google Play에서 설치하기](https://play.google.com/store/apps/details?id=io.github.dorririddo.bookplan&hl=ko)
 
 ## 기술 스택
 
