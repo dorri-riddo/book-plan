@@ -42,7 +42,12 @@ public class Token {
     @Column(columnDefinition = "TEXT")
     private String previousRefreshToken;
 
+    @Column(columnDefinition = "TEXT")
+    private String fcmToken;
+
     private Instant previousRefreshTokenExpiredAt;
+
+    private Boolean notificationEnabled;
 
     @CreatedDate
     private Instant createdAt;
@@ -68,6 +73,15 @@ public class Token {
         this.refreshToken = refreshToken;
         this.refreshTokenExpiredAt = refreshTokenExpiredAt;
         this.autoLogin = autoLogin;
+    }
+
+    public void updatePushRegistration(String fcmToken, boolean notificationEnabled) {
+        this.fcmToken = fcmToken;
+        this.notificationEnabled = notificationEnabled;
+    }
+
+    public void clearFcmToken() {
+        this.fcmToken = null;
     }
 
     public void rotateRefreshToken(String newAccessToken, String newRefreshToken,

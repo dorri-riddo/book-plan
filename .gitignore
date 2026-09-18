@@ -40,3 +40,6 @@ out/
 /data/
 *.mv.db
 *.trace.db
+
+## secrets ##
+*firebase-adminsdk*.json

@@ -26,5 +26,11 @@ jwt:
   access-token-validity: ${JWT_ACCESS_VALIDITY:15m}
   refresh-token-validity: ${JWT_REFRESH_VALIDITY:1h}
 
+firebase:
+  credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}
+
+notification:
+  daily-cron: ${DAILY_PUSH_CRON:0 5 9 * * *}
+
 server:
   port: ${PORT:8080}
